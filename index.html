@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+    <style>
+      #results {
+        position: fixed;
+        top: 50px;
+        left: 10px;
+        color: white;
+      }
+
+      #results span {
+        margin: 5px 5px;
+      }
+
+      video {
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+
+      h1 {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+      }
+
+      button {
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Basic Cloud Vision (Google) Demo -->
+
+    <video autoplay="true" id="videoElement"></video>
+    <button id="vision_button">Analyze</button>
+    <div id="results"></div>
+
+    <script>
+      // Access camera
+      var video = document.querySelector("#videoElement");
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then(function (stream) {
+            video.srcObject = stream;
+          })
+          .catch(function (err) {
+            console.log("Something went wrong!");
+          });
+      }
+
+      let model;
+
+      async function loadModel() {
+        try {
+          model = await cocoSsd.load();
+          console.log("Model loaded successfully.");
+        } catch (error) {
+          console.error("Error loading the model", error);
+        }
+      }
+      loadModel();
+
+      // We only get to work when the vision button is clicked
+      document
+        .querySelector("#vision_button")
+        .addEventListener("click", async () => {
+          // extract image as base64, scale it down to reduce data transfer speed
+          var scale = 0.25;
+          var canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+          canvas
+            .getContext("2d")
+            .drawImage(video, 0, 0, canvas.width, canvas.height);
+          try {
+            const predictions = await model.detect(canvas);
+            console.log("Predictions: ", predictions);
+
+            results.innerHTML = "";
+            predictions.forEach((prediction) => {
+              let description = document.createElement("span");
+              let score = document.createElement("span");
+
+              let div = document.createElement("div");
+              description.innerText = prediction.class;
+              score.innerText = prediction.score;
+
+              div.append(description, score);
+
+              results.append(div);
+            });
+
+          } catch (error) {
+            console.error("Error during detection", error);
+          }
+        });
+    </script>
+  </body>
+</html>
